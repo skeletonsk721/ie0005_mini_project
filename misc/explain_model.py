@@ -126,7 +126,12 @@ def main():
     ohe = pre.named_transformers_['multi_cat']
     onehot_map = {}
     for col, cats in zip(multi_cat_features, ohe.categories_):
-        onehot_map[col] = list(cats)
+        # convert numpy arrays / numpy scalar types to native Python types
+        # so json.dumps will not raise TypeError for types like numpy.int64
+        try:
+            onehot_map[col] = cats.tolist()
+        except Exception:
+            onehot_map[col] = [c.item() if hasattr(c, 'item') else c for c in list(cats)]
 
     # training metrics
     y_proba = model.predict_proba(X_test)[:, 1]
