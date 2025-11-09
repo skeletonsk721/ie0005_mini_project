@@ -1,0 +1,17 @@
+{
+  "age_years": 50,
+  "height": 175.0,
+  "weight": 60.0,
+  "ap_hi": 120.0,
+  "ap_lo": 90.0,
+  "age_cholesterol": 100,
+  "cholesterol": 2,
+  "gluc": 2,
+  "bp_category": "pre_high",
+  "age_group": "50s",
+  "bmi_group": "normal",
+  "gender": 1,
+  "smoke": 1,
+  "alco": 1,
+  "active": 1
+}

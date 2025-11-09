@@ -4,7 +4,8 @@ import json
 import os
 import main as main_module
 
-app = Flask(__name__, static_folder='Project_v2', static_url_path='')
+# static files moved to `web/` directory — serve from there
+app = Flask(__name__, static_folder='web', static_url_path='')
 
 
 @app.route('/')

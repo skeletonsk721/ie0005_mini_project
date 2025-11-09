@@ -1,6 +1,7 @@
 from pathlib import Path
 import json
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from datetime import datetime, date
 
 from prediction_core import load_model_params, predict_proba_from_sample, explain_contributions
 from api_core import call_model, APIError
@@ -11,13 +12,18 @@ def process_input(input_path: str = 'input_sample.json', para_path: str = 'para.
     if not p.exists():
         raise FileNotFoundError(f'Input JSON not found: {input_path}')
     data = json.loads(p.read_text(encoding='utf-8'))
+    # Convert raw front-end data to model input expected by prediction_core
+    model_sample = _raw_to_model_sample(data)
+
+    # persist processed model input for audit/debug
+    Path('model_input.json').write_text(json.dumps(model_sample, ensure_ascii=False, indent=2), encoding='utf-8')
 
     # Load model params
     params = load_model_params('model_params.json')
 
     # Predict
-    prob = predict_proba_from_sample(params, data)
-    contribs = explain_contributions(params, data)
+    prob = predict_proba_from_sample(params, model_sample)
+    contribs = explain_contributions(params, model_sample)
 
     # Build a prompt for api_core to generate a human-readable report
     prompt = (
@@ -44,6 +50,122 @@ def process_input(input_path: str = 'input_sample.json', para_path: str = 'para.
         'report': report_text
     }
     return out
+
+
+def _safe_int(v: Optional[Any], default: int = 0) -> int:
+    try:
+        return int(v)
+    except Exception:
+        return default
+
+
+def _safe_float(v: Optional[Any], default: float = 0.0) -> float:
+    try:
+        return float(v)
+    except Exception:
+        return default
+
+
+def _bmi_group(bmi: float) -> str:
+    if bmi < 18.5:
+        return 'underweight'
+    if bmi < 25:
+        return 'normal'
+    if bmi < 30:
+        return 'overweight'
+    return 'obese'
+
+
+def _bp_category(ap_hi: float, ap_lo: float) -> str:
+    if ap_hi < 120 and ap_lo < 80:
+        return 'normal'
+    if (120 <= ap_hi < 140) or (80 <= ap_lo < 90):
+        return 'pre_high'
+    return 'high'
+
+
+def _age_group(age_years: int) -> Optional[str]:
+    if 30 <= age_years <= 39:
+        return '30s'
+    if 40 <= age_years <= 49:
+        return '40s'
+    if 50 <= age_years <= 59:
+        return '50s'
+    if 60 <= age_years <= 69:
+        return '60s'
+    return None
+
+
+def _gender_code(g: Any) -> int:
+    # default mapping: male->1, female->2. If integer already, pass through
+    if isinstance(g, int):
+        return g
+    if not g:
+        return 0
+    s = str(g).lower()
+    if s.startswith('m'):
+        return 1
+    return 2
+
+
+def _raw_to_model_sample(raw: Dict[str, Any]) -> Dict[str, Any]:
+    # raw: fields from frontend (birthday or direct age_years, gender, height, weight, systolic, diastolic, cholesterol, glucose, smoking, alcohol, physical)
+    # produce keys expected by prediction_core
+    # age_years
+    age_years = None
+    if raw.get('birthday'):
+        try:
+            bdate = datetime.fromisoformat(raw['birthday']).date()
+            age_days = (date.today() - bdate).days
+            age_years = int(age_days / 365)
+        except Exception:
+            age_years = None
+    if age_years is None and raw.get('age_years') is not None:
+        age_years = _safe_int(raw.get('age_years'), 0)
+    if age_years is None:
+        age_years = 0
+
+    height = _safe_float(raw.get('height'))
+    weight = _safe_float(raw.get('weight'))
+    ap_hi = _safe_float(raw.get('systolic') or raw.get('ap_hi'))
+    ap_lo = _safe_float(raw.get('diastolic') or raw.get('ap_lo'))
+    cholesterol = _safe_int(raw.get('cholesterol'))
+    gluc = _safe_int(raw.get('glucose') or raw.get('gluc'))
+    smoke = _safe_int(raw.get('smoking') or raw.get('smoke'))
+    alco = _safe_int(raw.get('alcohol') or raw.get('alco'))
+    active = _safe_int(raw.get('physical') or raw.get('active'))
+
+    # compute derived
+    bmi = None
+    if height > 0:
+        try:
+            bmi = weight / ((height / 100) ** 2)
+        except Exception:
+            bmi = None
+    bmi_grp = _bmi_group(bmi) if bmi is not None else 'normal'
+    bp_cat = _bp_category(ap_hi, ap_lo)
+    age_grp = _age_group(age_years)
+    age_chol = age_years * cholesterol
+    gender = _gender_code(raw.get('gender'))
+
+    model_sample = {
+        'age_years': int(age_years),
+        'height': float(height),
+        'weight': float(weight),
+        'ap_hi': float(ap_hi),
+        'ap_lo': float(ap_lo),
+        'age_cholesterol': age_chol,
+        'cholesterol': int(cholesterol),
+        'gluc': int(gluc),
+        'bp_category': bp_cat,
+        'age_group': age_grp,
+        'bmi_group': bmi_grp,
+        'gender': int(gender),
+        'smoke': int(smoke),
+        'alco': int(alco),
+        'active': int(active)
+    }
+    return model_sample
 
 
 if __name__ == '__main__':

@@ -1,13 +1,13 @@
 {
-  "birthday": "2025-11-12",
+  "age_years": 50,
   "gender": "male",
-  "height": 110,
-  "weight": 50,
+  "height": 175,
+  "weight": 60,
   "systolic": 120,
-  "diastolic": 80,
+  "diastolic": 90,
   "cholesterol": 2,
   "glucose": 2,
-  "smoking": 0,
-  "alcohol": 0,
+  "smoking": 1,
+  "alcohol": 1,
   "physical": 1
 }

@@ -1,9 +1,8 @@
-
 document.getElementById('predictionForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
 
-    const birthday = document.getElementById('birthday').value;
+    const age = document.getElementById('age').value;
     const gender = document.getElementById('gender').value;
     const height = document.getElementById('height').value;
     const weight = document.getElementById('weight').value;
@@ -16,7 +15,7 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
     const physical = document.getElementById('physical').value;
 
 
-    if (!birthday || !gender || !height || !weight || !systolic || !diastolic ||
+    if (!age || !gender || !height || !weight || !systolic || !diastolic ||
         !cholesterol || !glucose || !smoking || !alcohol || !physical) {
         alert('Please fill in all fields');
         return;
@@ -55,4 +54,36 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
         `;
         resultDiv.classList.add('highlight');
     }, 2000);
+
+
+    const payload = {
+        age_years: Number(age),            // send as age_years so main.py recognizes it
+        gender: gender,                    // string, main._gender_code will map it
+        height: Number(height),
+        weight: Number(weight),
+        systolic: Number(systolic),
+        diastolic: Number(diastolic),
+        cholesterol: Number(cholesterol),
+        glucose: Number(glucose),
+        smoking: Number(smoking),
+        alcohol: Number(alcohol),
+        physical: Number(physical)
+    };
+
+    fetch('/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            resultDiv.innerHTML = `<p style="color:red">Error: ${data.error}</p>`;
+            return;
+        }
+        // show probability/report as your current script already does
+    })
+    .catch(err => {
+        resultDiv.innerHTML = `<p style="color:red">Request failed: ${err}</p>`;
+    });
 });

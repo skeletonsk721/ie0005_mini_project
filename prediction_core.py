@@ -148,6 +148,77 @@ def explain_contributions(params: Dict[str, Any], sample: Dict[str, Any]) -> Dic
     return contributions
 
 
+def predict_and_save(params: Dict[str, Any], sample: Dict[str, Any], out_path: str = 'prediction_data.json') -> Dict[str, Any]:
+    """Run prediction and save core numeric + explanatory outputs to JSON.
+
+    The saved JSON contains:
+    - timestamp (ISO 8601)
+    - feature_names, feature_vector (list), weights, intercept
+    - logit, probability
+    - contributions (per-feature and intercept)
+    - model_input (the input sample provided)
+
+    All numeric types are converted to native Python floats/ints to ensure
+    JSON serializability for downstream agents.
+    """
+    from datetime import datetime
+
+    vec = vectorize(sample, params)
+    w = np.array(params.get('weights', []), dtype=float)
+    intercept = float(params.get('intercept', 0.0))
+    # compute logit and probability
+    logit = float(np.dot(w, vec) + intercept)
+    prob = predict_proba_from_vector(vec, params)
+
+    # contributions (ensure native floats)
+    contribs = explain_contributions(params, sample)
+    contribs_native = {k: float(v) for k, v in contribs.items()}
+
+    # feature vector native list
+    feature_vector = [float(x) for x in vec.tolist()]
+
+    payload = {
+        'timestamp': datetime.utcnow().isoformat() + 'Z',
+        'feature_names': list(params.get('feature_names', [])),
+        'feature_vector': feature_vector,
+        'weights': [float(x) for x in params.get('weights', [])],
+        'intercept': intercept,
+        'logit': logit,
+        'probability': float(prob),
+        'contributions': contribs_native,
+        'model_input': _make_json_compatible(sample),
+    }
+
+    Path(out_path).write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding='utf-8')
+    return payload
+
+
+def _make_json_compatible(obj: Any) -> Any:
+    """Recursively convert numpy/scalar types to native Python types for JSON."""
+    if obj is None:
+        return None
+    if isinstance(obj, (str, bool)):
+        return obj
+    if isinstance(obj, (int, float)):
+        # numpy scalar subclasses of int/float are instance of numbers.Number too,
+        # but converting via float/int will normalize them.
+        return obj
+    if isinstance(obj, np.generic):
+        try:
+            return obj.item()
+        except Exception:
+            return float(obj)
+    if isinstance(obj, dict):
+        return {str(k): _make_json_compatible(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_make_json_compatible(v) for v in obj]
+    try:
+        # fallback for pandas types etc.
+        return float(obj)
+    except Exception:
+        return str(obj)
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='Score a sample using exported model_params.json')
@@ -179,8 +250,14 @@ if __name__ == '__main__':
 
     prob = predict_proba_from_sample(params, sample)
     print(f"Predicted probability: {prob:.6f}")
+
+    # Save detailed prediction data for downstream agents
+    out_path = 'prediction_data.json'
+    payload = predict_and_save(params, sample, out_path=out_path)
+    print(f"Wrote prediction data to {out_path}")
+
     if args.show_contrib:
-        contribs = explain_contributions(params, sample)
+        contribs = payload.get('contributions', {})
         items = sorted(((k, v) for k, v in contribs.items() if k != 'intercept'), key=lambda kv: abs(kv[1]), reverse=True)
         print('Top feature contributions:')
         for k, v in items[:10]:
