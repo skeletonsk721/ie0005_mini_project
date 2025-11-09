@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardiovascular Disease Prediction</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="heart-icon">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+            <h1>Cardiovascular Disease Prediction</h1>
+            <p>Scientific prediction tool to assess cardiovascular disease risk based on your health data</p>
+        </header>
+
+        <div class="content">
+            <div class="intro">
+                <h2>Start Assessing Your Health Risk</h2>
+                <p>Please fill in the following health information. Our prediction model will assess your cardiovascular disease risk based on scientific data. All data will be kept strictly confidential.</p>
+            </div>
+
+            <div class="form-container">
+                <form id="predictionForm">
+                    <div class="form-grid">
+                        <!-- Row 1 -->
+                        <div class="form-item">
+                            <label for="birthday"><i class="fas fa-birthday-cake"></i> Birthday:</label>
+                            <input type="date" id="birthday" name="birthday" required>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="gender"><i class="fas fa-venus-mars"></i> Gender:</label>
+                            <select id="gender" name="gender" required>
+                                <option value="">Please select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="height"><i class="fas fa-ruler-vertical"></i> Height (cm):</label>
+                            <input type="number" id="height" name="height" min="100" max="250" required>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="weight"><i class="fas fa-weight"></i> Weight (kg):</label>
+                            <input type="number" id="weight" name="weight" min="30" max="200" required>
+                        </div>
+
+                        <!-- Row 2 -->
+                        <div class="form-item">
+                            <label for="systolic"><i class="fas fa-tachometer-alt"></i> Systolic BP (mmHg):</label>
+                            <input type="number" id="systolic" name="systolic" min="70" max="200" required>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="diastolic"><i class="fas fa-tachometer-alt"></i> Diastolic BP (mmHg):</label>
+                            <input type="number" id="diastolic" name="diastolic" min="40" max="130" required>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="cholesterol"><i class="fas fa-vial"></i> Cholesterol Level:</label>
+                            <select id="cholesterol" name="cholesterol" required>
+                                <option value="">Please select</option>
+                                <option value="1">Normal</option>
+                                <option value="2">Above Normal</option>
+                                <option value="3">Well Above Normal</option>
+                            </select>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="glucose"><i class="fas fa-vial"></i> Glucose Level:</label>
+                            <select id="glucose" name="glucose" required>
+                                <option value="">Please select</option>
+                                <option value="1">Normal</option>
+                                <option value="2">Above Normal</option>
+                                <option value="3">Well Above Normal</option>
+                            </select>
+                        </div>
+
+                        <!-- Row 3 - New fields -->
+                        <div class="form-item">
+                            <label for="smoking"><i class="fas fa-smoking"></i> Smoking:</label>
+                            <select id="smoking" name="smoking" required>
+                                <option value="">Please select</option>
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="alcohol"><i class="fas fa-wine-glass"></i> Alcohol Intake:</label>
+                            <select id="alcohol" name="alcohol" required>
+                                <option value="">Please select</option>
+                                <option value="0">No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                        </div>
+
+                        <div class="form-item">
+                            <label for="physical"><i class="fas fa-running"></i> Physical Activity:</label>
+                            <select id="physical" name="physical" required>
+                                <option value="">Please select</option>
+                                <option value="0">Inactive</option>
+                                <option value="1">Active</option>
+                            </select>
+                        </div>
+
+                        <!-- Empty cell -->
+                        <div class="form-item"></div>
+                    </div>
+
+                    <button type="submit" class="submit-btn">
+                        <i class="fas fa-stethoscope"></i> Get Prediction
+                    </button>
+                </form>
+
+                <div class="result" id="result">
+                    Fill out the form and submit to get your prediction
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Note: The results provided by this tool are for reference only and cannot replace professional medical advice. If you have health concerns, please consult a healthcare professional.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
