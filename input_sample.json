@@ -1,17 +1,13 @@
 {
-  "age_years": 50,
-  "height": 170,
-  "weight": 70,
-  "ap_hi": 130,
-  "ap_lo": 85,
-  "age_cholesterol": 100,
+  "birthday": "2025-11-12",
+  "gender": "male",
+  "height": 110,
+  "weight": 50,
+  "systolic": 120,
+  "diastolic": 80,
   "cholesterol": 2,
-  "gluc": 1,
-  "bp_category": "pre_high",
-  "age_group": "50s",
-  "bmi_group": "normal",
-  "gender": 1,
-  "smoke": 0,
-  "alco": 0,
-  "active": 1
+  "glucose": 2,
+  "smoking": 0,
+  "alcohol": 0,
+  "physical": 1
 }

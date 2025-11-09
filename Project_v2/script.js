@@ -29,33 +29,57 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
     resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing data...';
     resultDiv.classList.remove('highlight');
 
-    // Simulate analysis process
-    setTimeout(() => {
-        // Simulate risk assessment (in a real app, this would call a backend API)
-        const riskScore = Math.random();
-        let riskLevel, riskMessage, riskColor;
+    // Build payload for backend
+    const payload = {
+        birthday: birthday,
+        gender: gender,
+        height: Number(height),
+        weight: Number(weight),
+        systolic: Number(systolic),
+        diastolic: Number(diastolic),
+        cholesterol: Number(cholesterol),
+        glucose: Number(glucose),
+        smoking: Number(smoking),
+        alcohol: Number(alcohol),
+        physical: Number(physical)
+    };
 
-        if (riskScore < 0.3) {
+    fetch('/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.error) {
+            resultDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+            return;
+        }
+        const prob = data.probability;
+        const report = data.report || '';
+        let riskLevel, riskMessage, riskColor;
+        if (prob < 0.3) {
             riskLevel = "Low Risk";
-            riskMessage = "Based on the data provided, your cardiovascular disease risk is low. Keep maintaining a healthy lifestyle!";
             riskColor = "#2e8b57";
-        } else if (riskScore < 0.7) {
+        } else if (prob < 0.7) {
             riskLevel = "Medium Risk";
-            riskMessage = "Based on the data provided, you have a moderate cardiovascular disease risk. Regular check-ups and attention to lifestyle are recommended.";
             riskColor = "#ff8c00";
         } else {
             riskLevel = "High Risk";
-            riskMessage = "Based on the data provided, your cardiovascular disease risk is high. It is recommended to consult a healthcare professional as soon as possible.";
             riskColor = "#dc143c";
         }
 
         // Display results
         resultDiv.innerHTML = `
             <div>
-                <h3 style="color: ${riskColor}; margin-bottom: 10px;">Risk Assessment: ${riskLevel}</h3>
-                <p>${riskMessage}</p>
+                <h3 style="color: ${riskColor}; margin-bottom: 6px;">Risk Assessment: ${riskLevel}</h3>
+                <p><strong>Predicted probability:</strong> ${(prob*100).toFixed(1)}%</p>
+                <div style="margin-top:8px; white-space:pre-wrap;">${report}</div>
             </div>
         `;
         resultDiv.classList.add('highlight');
-    }, 2000);
+    })
+    .catch(err => {
+        resultDiv.innerHTML = `<p style="color: red;">Request failed: ${err}</p>`;
+    });
 });
