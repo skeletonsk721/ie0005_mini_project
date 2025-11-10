@@ -1,15 +1,14 @@
-"""Minimal API core for calling Claude-like service.
-Single responsibility: accept prompt + config, return model response text (synchronous).
+"""To call the LLM model, use the `call_model` function.
+This function handles the API request and response parsing.
 
-Function: call_model(prompt, config_path='para.json', credentials_path='credentials.json') -> str
-- Reads config (strict JSON)
-- Reads credentials JSON
-- Chooses header style (x-api-key if key starts with sk-ant-, otherwise Bearer)
-- If model name contains 'haiku' -> use /v1/messages with top-level 'system' and 'messages'
-  (include max_tokens and temperature)
-- Otherwise -> use /v1/complete with prompt or anthopic-style wrapping if anthropic_version requires
+if __name__ == '__main__':
+    try:
+        out = call_model('请写一首 4 行中文俳句关于秋天。') # Example call
+        # You can replace the prompt with your own text.
+        print('MODEL OUTPUT:\n', out)
+    except Exception as e:
+        print('CALL FAILED:', e)
 
-This core intentionally avoids CLI, async, streaming, or extra utilities.
 """
 from pathlib import Path
 from typing import Optional, Dict, Any

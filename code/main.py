@@ -1,29 +1,25 @@
 from pathlib import Path
 import json
 from typing import Dict, Any, Optional
-from datetime import datetime, date
 
 from prediction_core import load_model_params, predict_proba_from_sample, explain_contributions
 from api_core import call_model, APIError
 
 
-def process_input(input_path: str = 'input_sample.json', para_path: str = 'para.json', cred_path: str = 'credentials.json') -> Dict[str, Any]:
+def process_input(input_path: str = 'input_sample.json', para_path: str = 'llm_para.json', cred_path: str = 'credentials.json') -> Dict[str, Any]:
     p = Path(input_path)
     if not p.exists():
         raise FileNotFoundError(f'Input JSON not found: {input_path}')
     data = json.loads(p.read_text(encoding='utf-8'))
-    # Convert raw front-end data to model input expected by prediction_core
-    model_sample = _raw_to_model_sample(data)
-
-    # persist processed model input for audit/debug
-    Path('model_input.json').write_text(json.dumps(model_sample, ensure_ascii=False, indent=2), encoding='utf-8')
+    # Persist raw model input for audit/debug
+    Path('model_input.json').write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
     # Load model params
     params = load_model_params('model_params.json')
 
-    # Predict
-    prob = predict_proba_from_sample(params, model_sample)
-    contribs = explain_contributions(params, model_sample)
+    # Predict using raw input; prediction_core now handles preprocessing
+    prob = predict_proba_from_sample(params, data)
+    contribs = explain_contributions(params, data)
 
     # Build a prompt for api_core to generate a human-readable report
     prompt = (
@@ -109,63 +105,10 @@ def _gender_code(g: Any) -> int:
 
 
 def _raw_to_model_sample(raw: Dict[str, Any]) -> Dict[str, Any]:
-    # raw: fields from frontend (birthday or direct age_years, gender, height, weight, systolic, diastolic, cholesterol, glucose, smoking, alcohol, physical)
-    # produce keys expected by prediction_core
-    # age_years
-    age_years = None
-    if raw.get('birthday'):
-        try:
-            bdate = datetime.fromisoformat(raw['birthday']).date()
-            age_days = (date.today() - bdate).days
-            age_years = int(age_days / 365)
-        except Exception:
-            age_years = None
-    if age_years is None and raw.get('age_years') is not None:
-        age_years = _safe_int(raw.get('age_years'), 0)
-    if age_years is None:
-        age_years = 0
-
-    height = _safe_float(raw.get('height'))
-    weight = _safe_float(raw.get('weight'))
-    ap_hi = _safe_float(raw.get('systolic') or raw.get('ap_hi'))
-    ap_lo = _safe_float(raw.get('diastolic') or raw.get('ap_lo'))
-    cholesterol = _safe_int(raw.get('cholesterol'))
-    gluc = _safe_int(raw.get('glucose') or raw.get('gluc'))
-    smoke = _safe_int(raw.get('smoking') or raw.get('smoke'))
-    alco = _safe_int(raw.get('alcohol') or raw.get('alco'))
-    active = _safe_int(raw.get('physical') or raw.get('active'))
-
-    # compute derived
-    bmi = None
-    if height > 0:
-        try:
-            bmi = weight / ((height / 100) ** 2)
-        except Exception:
-            bmi = None
-    bmi_grp = _bmi_group(bmi) if bmi is not None else 'normal'
-    bp_cat = _bp_category(ap_hi, ap_lo)
-    age_grp = _age_group(age_years)
-    age_chol = age_years * cholesterol
-    gender = _gender_code(raw.get('gender'))
-
-    model_sample = {
-        'age_years': int(age_years),
-        'height': float(height),
-        'weight': float(weight),
-        'ap_hi': float(ap_hi),
-        'ap_lo': float(ap_lo),
-        'age_cholesterol': age_chol,
-        'cholesterol': int(cholesterol),
-        'gluc': int(gluc),
-        'bp_category': bp_cat,
-        'age_group': age_grp,
-        'bmi_group': bmi_grp,
-        'gender': int(gender),
-        'smoke': int(smoke),
-        'alco': int(alco),
-        'active': int(active)
-    }
-    return model_sample
+    # This function has been removed. prediction_core now accepts raw frontend
+    # samples and performs the necessary preprocessing. Keep this stub in case
+    # external callers reference it, but raise to make misuse explicit.
+    raise RuntimeError('raw-to-model conversion moved to prediction_core')
 
 
 if __name__ == '__main__':
