@@ -31,7 +31,9 @@ def submit():
     try:
         prob = predict_probability(data)
         print(prob)
-        return jsonify({'probability': prob})
+        LLM_response = call_model(f"User input: {data}\nPrediction: {prob}")
+        print(LLM_response)
+        return jsonify({'probability': prob, 'recommendations': LLM_response})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -94,24 +96,25 @@ def _load_key(credentials_path: Optional[str]) -> Optional[str]:
     return data.get('api_key') or data.get('apiKey')
 
 
-def call_model(prompt: str, config_path: str = 'para.json', credentials_path: str = 'credentials.json') -> str:
+def call_model(prompt: str) -> str:
     """Call model synchronously and return resulting text.
 
     Input:
       - prompt: user prompt string
-      - config_path: path to a JSON config file
-      - credentials_path: path to JSON containing api_key
     Output: model text
     """
-    cfg = _load_json(config_path)
-    key = _load_key(credentials_path) or None
 
-    base_url = cfg.get('base_url', 'https://api.anthropic.com').rstrip('/')
-    model = cfg.get('model')
-    temperature = cfg.get('temperature', 0.0)
-    max_tokens = cfg.get('max_tokens', 1024)
-    anthropic_version = cfg.get('anthropic_version')
-    system_prompt = cfg.get('system', 'You are a helpful assistant.')
+    credentials_path = 'code/credentials.json'
+    key = _load_key(credentials_path) or None
+    print(f"DEBUG: Key loaded: {key[:10] if key else 'None'}...")
+
+    base_url = 'https://api.anthropic.com'
+    model = 'claude-haiku-4-5-20251001'
+    print(f"DEBUG: Model: {model}")
+    temperature = 0.0
+    max_tokens = 1024
+    anthropic_version = "2023-06-01"
+    system_prompt = '"You are a cardiovascular health assistant. Based on the user\'s health data and predicted cardiovascular disease probability, provide personalized health recommendations.\n\nInput format: User input: [age_years, bmi, systolic_bp, diastolic_bp, cholesterol_level, glucose_level, physical_activity]\nPrediction: probability (0-1, higher means higher risk)\n\nData mapping:\n- age_years: Age in years\n- bmi: Body Mass Index (normal: 18.5-24.9)\n- systolic_bp/diastolic_bp: Blood pressure (normal: <120/80)\n- cholesterol_level: 1=normal, 2=above normal, 3=high\n- glucose_level: 1=normal, 2=above normal, 3=high\n- physical_activity: 0=no regular activity, 1=regular physical activity\n\nProvide:\n1. Risk assessment based on probability (<0.3=low, 0.3-0.7=medium, >0.7=high)\n2. Specific recommendations for each concerning health metric\n3. Lifestyle suggestions (diet, exercise, stress management)\n4. When to consult a doctor\n\nKeep response concise but informative, focus on actionable advice. Format: five bullet points of recommendations in plain text (no markdown). Nothing else are allowed."'
 
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
     if key and str(key).startswith('sk-ant-'):
@@ -171,7 +174,19 @@ def call_model(prompt: str, config_path: str = 'para.json', credentials_path: st
         if 'messages' in data and isinstance(data['messages'], list) and data['messages']:
             first = data['messages'][0]
             if isinstance(first, dict) and 'content' in first:
-                return first['content']
+                content = first['content']
+                if isinstance(content, list):
+                    texts = [block['text'] for block in content if isinstance(block, dict) and block.get('type') == 'text']
+                    return ''.join(texts)
+                elif isinstance(content, str):
+                    return content
+        if 'content' in data:
+            content = data['content']
+            if isinstance(content, list):
+                texts = [block['text'] for block in content if isinstance(block, dict) and block.get('type') == 'text']
+                return ''.join(texts)
+            elif isinstance(content, str):
+                return content
     # fallback: stringify
     return json.dumps(data, ensure_ascii=False)
 

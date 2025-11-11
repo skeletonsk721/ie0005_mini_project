@@ -53,6 +53,7 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
         }
         // Display the probability from backend
         const prob = data.probability;
+        const recommendations = data.recommendations || "No recommendations available.";
         let riskLevel, riskMessage, riskColor;
         if (prob < 0.3) {
             riskLevel = "Low Risk";
@@ -71,6 +72,10 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
             <div>
                 <h3 style="color: ${riskColor}; margin-bottom: 10px;">Risk Assessment: ${riskLevel}</h3>
                 <p>${riskMessage}</p>
+                <div style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-radius: 5px;">
+                    <h4 style="margin-bottom: 8px; color: #333;">Personalized Recommendations:</h4>
+                    <p style="line-height: 1.5; color: #555;">${recommendations.replace(/\n/g, '<br>')}</p>
+                </div>
             </div>
         `;
         resultDiv.classList.add('highlight');
