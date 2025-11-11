@@ -3,7 +3,6 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
 
 
     const age = document.getElementById('age').value;
-    const gender = document.getElementById('gender').value;
     const height = document.getElementById('height').value;
     const weight = document.getElementById('weight').value;
     const systolic = document.getElementById('systolic').value;
@@ -15,7 +14,7 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
     const physical = document.getElementById('physical').value;
 
 
-    if (!age || !gender || !height || !weight || !systolic || !diastolic ||
+    if (!age || !height || !weight || !systolic || !diastolic ||
         !cholesterol || !glucose || !smoking || !alcohol || !physical) {
         alert('Please fill in all fields');
         return;
@@ -26,49 +25,20 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
     resultDiv.classList.remove('highlight');
 
 
-    setTimeout(() => {
-        // Simulate risk assessment (in a real app, this would call a backend API)
-        const riskScore = Math.random();
-        let riskLevel, riskMessage, riskColor;
+    // Convert frontend fields into a list for direct prediction
+    // Order: [age_years, bmi, ap_hi, ap_lo, cholesterol, gluc, active]
+    const h_m = Number(height) / 100.0;
+    const bmi = h_m > 0 ? Number(weight) / (h_m * h_m) : 0;
 
-        if (riskScore < 0.3) {
-            riskLevel = "Low Risk";
-            riskMessage = "Based on the data provided, your cardiovascular disease risk is low. Keep maintaining a healthy lifestyle!";
-            riskColor = "#2e8b57";
-        } else if (riskScore < 0.7) {
-            riskLevel = "Medium Risk";
-            riskMessage = "Based on the data provided, you have a moderate cardiovascular disease risk. Regular check-ups and attention to lifestyle are recommended.";
-            riskColor = "#ff8c00";
-        } else {
-            riskLevel = "High Risk";
-            riskMessage = "Based on the data provided, your cardiovascular disease risk is high. It is recommended to consult a healthcare professional as soon as possible.";
-            riskColor = "#dc143c";
-        }
-
-        // Display results
-        resultDiv.innerHTML = `
-            <div>
-                <h3 style="color: ${riskColor}; margin-bottom: 10px;">Risk Assessment: ${riskLevel}</h3>
-                <p>${riskMessage}</p>
-            </div>
-        `;
-        resultDiv.classList.add('highlight');
-    }, 2000);
-
-
-    const payload = {
-        age_years: Number(age),            // send as age_years so main.py recognizes it
-        gender: gender,                    // string, main._gender_code will map it
-        height: Number(height),
-        weight: Number(weight),
-        systolic: Number(systolic),
-        diastolic: Number(diastolic),
-        cholesterol: Number(cholesterol),
-        glucose: Number(glucose),
-        smoking: Number(smoking),
-        alcohol: Number(alcohol),
-        physical: Number(physical)
-    };
+    const payload = [
+        Number(age),           // age_years
+        Number(bmi.toFixed(2)), // bmi
+        Number(systolic),      // ap_hi
+        Number(diastolic),     // ap_lo
+        Number(cholesterol),   // cholesterol
+        Number(glucose),       // gluc
+        Number(physical)       // active
+    ];
 
     fetch('/submit', {
         method: 'POST',
@@ -81,7 +51,29 @@ document.getElementById('predictionForm').addEventListener('submit', function(e)
             resultDiv.innerHTML = `<p style="color:red">Error: ${data.error}</p>`;
             return;
         }
-        // show probability/report as your current script already does
+        // Display the probability from backend
+        const prob = data.probability;
+        let riskLevel, riskMessage, riskColor;
+        if (prob < 0.3) {
+            riskLevel = "Low Risk";
+            riskMessage = `Predicted probability: ${(prob * 100).toFixed(2)}%. Your cardiovascular disease risk is low.`;
+            riskColor = "#2e8b57";
+        } else if (prob < 0.7) {
+            riskLevel = "Medium Risk";
+            riskMessage = `Predicted probability: ${(prob * 100).toFixed(2)}%. You have a moderate risk.`;
+            riskColor = "#ff8c00";
+        } else {
+            riskLevel = "High Risk";
+            riskMessage = `Predicted probability: ${(prob * 100).toFixed(2)}%. Your risk is high.`;
+            riskColor = "#dc143c";
+        }
+        resultDiv.innerHTML = `
+            <div>
+                <h3 style="color: ${riskColor}; margin-bottom: 10px;">Risk Assessment: ${riskLevel}</h3>
+                <p>${riskMessage}</p>
+            </div>
+        `;
+        resultDiv.classList.add('highlight');
     })
     .catch(err => {
         resultDiv.innerHTML = `<p style="color:red">Request failed: ${err}</p>`;
